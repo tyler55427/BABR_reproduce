@@ -58,3 +58,8 @@ Thumbs.db
 # ── Miscellaneous ─────────────────────────────────────────────────────
 *.log
 .cache/
+
+
+# results
+results/
+plot_curves.py

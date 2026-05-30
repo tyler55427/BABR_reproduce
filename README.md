@@ -15,6 +15,19 @@ for periodontal bone resorption grading**.
 Download the BRAR dataset from Figshare. After extraction, you should have:
 
 ```
+datas/
+├── meta_data.csv                 # renamed from brar_grades.csv (or metadata CSV)
+├── BRAR_codebook_v1.0.xlsx       # optional, for reference
+├── level_1/                      # grade-1 images (copy from images/)
+├── level_2/                      # grade-2 images
+└── level_3/                      # grade-3 images
+```
+
+### 2. Organize into `datas/`
+
+Place the data into the repository's `datas/` directory with this structure:
+
+```
 BRAR-dataset/
 ├── images/                       # Anonymized panoramic radiographs (.jpg)
 ├── annotations/
@@ -23,19 +36,6 @@ BRAR-dataset/
 │   └── brar_grades.csv
 ├── BRAR_codebook_v1.0.xlsx
 └── BRAR_annotation_protocol_v1.0.pdf
-```
-
-### 2. Organize into `datas/`
-
-Place the data into the repository's `datas/` directory with this structure:
-
-```
-datas/
-├── meta_data.csv                 # renamed from brar_grades.csv (or metadata CSV)
-├── BRAR_codebook_v1.0.xlsx       # optional, for reference
-├── level_1/                      # grade-1 images (copy from images/)
-├── level_2/                      # grade-2 images
-└── level_3/                      # grade-3 images
 ```
 
 If your data is organized differently by grade, adjust the `--data_root` and `--meta_csv` arguments accordingly.

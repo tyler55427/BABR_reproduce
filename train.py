@@ -424,7 +424,7 @@ def main_optimized(label_csv=None, image_dir=None, output_dir=None):
     print("开始优化训练...")
     trained_model, best_val_acc, history = train_with_regularization(
         model, train_loader, val_loader, class_weights,
-        num_epochs=50, initial_lr=0.001, patience=15
+        num_epochs=150, initial_lr=0.001, patience=15
     )
     
     # 评估模型
