@@ -12,6 +12,7 @@ import seaborn as sns
 from PIL import Image
 import timm
 from pathlib import Path
+import argparse
 import random
 import warnings
 warnings.filterwarnings('ignore')
@@ -243,13 +244,18 @@ def train_with_regularization(model, train_loader, val_loader, class_weights,
     
     return model, best_val_acc, (train_losses, val_losses, train_accuracies, val_accuracies)
 
-def evaluate_model_detailed(model, test_loader, class_names=['等级1', '等级2', '等级3']):
+def evaluate_model_detailed(model, test_loader, class_names=['等级1', '等级2', '等级3'], output_dir=None):
     """详细的模型评估"""
-    
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     model.eval()
-    
+
+    if output_dir is None:
+        output_dir = Path(__file__).parent / "results"
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     all_predictions = []
     all_labels = []
     all_probabilities = []
@@ -277,7 +283,7 @@ def evaluate_model_detailed(model, test_loader, class_names=['等级1', '等级2
     plt.title('混淆矩阵')
     plt.xlabel('预测标签')
     plt.ylabel('真实标签')
-    plt.savefig('optimized_confusion_matrix.png', dpi=300, bbox_inches='tight')
+    plt.savefig(str(output_dir / 'optimized_confusion_matrix.png'), dpi=300, bbox_inches='tight')
     plt.show()
     
     # 计算各类别准确率
@@ -292,17 +298,53 @@ def evaluate_model_detailed(model, test_loader, class_names=['等级1', '等级2
     
     return accuracy
 
-def main_optimized():
-    """优化的主训练函数"""
-    
-    # 设置路径
-    excel_path = r"C:\work\2025-08-10\files\SD文章\完整图像标签数据集.xlsx"
-    image_dir = r"C:\work\2025-08-10\files\SD文章\数据\脱敏数据汇总\图像文件"
-    
+def main_optimized(label_csv=None, image_dir=None, output_dir=None):
+    """优化的主训练函数
+
+    Parameters
+    ----------
+    label_csv : str or Path
+        Path to labels CSV/Excel file (columns: 新文件名, 等级).
+        Default: ./datas/labels.csv
+    image_dir : str or Path
+        Path to directory containing all images (flat structure).
+        Default: ./datas/images
+    output_dir : str or Path
+        Path to save model and results.
+        Default: ./results
+    """
+
+    # 设置路径 — 使用相对路径，可被命令行参数覆盖
+    project_root = Path(__file__).parent
+
+    if label_csv is None:
+        label_csv = project_root / "datas" / "labels.csv"
+    else:
+        label_csv = Path(label_csv)
+
+    if image_dir is None:
+        image_dir = project_root / "datas" / "images"
+    else:
+        image_dir = Path(image_dir)
+
+    if output_dir is None:
+        output_dir = project_root / "results"
+    else:
+        output_dir = Path(output_dir)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     print("=== 优化的骨吸收等级分类实验 ===")
-    
-    # 读取数据
-    df = pd.read_excel(excel_path)
+    print(f"标签文件: {label_csv}")
+    print(f"图像目录: {image_dir}")
+    print(f"输出目录: {output_dir}")
+
+    # 读取数据 — 支持 CSV 和 Excel 两种格式
+    label_csv = Path(label_csv)
+    if label_csv.suffix.lower() in ['.xlsx', '.xls']:
+        df = pd.read_excel(label_csv)
+    else:
+        df = pd.read_csv(label_csv)
     df = df[df['等级'].isin([1, 2, 3])].copy()
     
     print(f"数据集大小: {len(df)}")
@@ -387,9 +429,10 @@ def main_optimized():
     
     # 评估模型
     print("评估优化后的模型...")
-    test_accuracy = evaluate_model_detailed(trained_model, test_loader)
+    test_accuracy = evaluate_model_detailed(trained_model, test_loader, output_dir=output_dir)
     
     # 保存模型
+    model_path = output_dir / 'optimized_bone_classifier.pth'
     torch.save({
         'model_state_dict': trained_model.state_dict(),
         'model_name': model_name,
@@ -397,13 +440,47 @@ def main_optimized():
         'class_weights': class_weights,
         'best_val_acc': best_val_acc,
         'test_acc': test_accuracy
-    }, 'optimized_bone_classifier.pth')
-    
+    }, str(model_path))
+
     print(f"\n=== 优化实验结果 ===")
     print(f"最佳验证准确率: {best_val_acc:.2f}%")
     print(f"测试准确率: {test_accuracy:.4f} ({test_accuracy*100:.2f}%)")
-    print("模型已保存为: optimized_bone_classifier.pth")
+    print(f"模型已保存为: {model_path}")
+
+
+def main():
+    """命令行入口 — 解析参数并调用训练主函数"""
+    parser = argparse.ArgumentParser(
+        description="Train a 3-class BRAR severity classifier on panoramic radiographs"
+    )
+    parser.add_argument(
+        "--label_csv",
+        type=str,
+        default=None,
+        help="Path to labels CSV/Excel file (columns: 新文件名, 等级). "
+             "Default: ./datas/labels.csv",
+    )
+    parser.add_argument(
+        "--image_dir",
+        type=str,
+        default=None,
+        help="Path to directory containing all images (flat structure). "
+             "Default: ./datas/images",
+    )
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default=None,
+        help="Directory to save model and results. Default: ./results",
+    )
+    args = parser.parse_args()
+    main_optimized(
+        label_csv=args.label_csv,
+        image_dir=args.image_dir,
+        output_dir=args.output_dir,
+    )
+
 
 # 运行优化版本
 if __name__ == "__main__":
-    main_optimized()
+    main()
