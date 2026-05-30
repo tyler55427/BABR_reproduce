@@ -233,10 +233,10 @@ def train_with_regularization(model, train_loader, val_loader, class_weights,
         print(f'Learning Rate: {scheduler.get_last_lr()[0]:.6f}')
         print('-' * 60)
         
-        # 早停
-        if patience_counter >= patience:
-            print(f"早停触发，最佳验证准确率: {best_val_acc:.2f}%")
-            break
+        # # 早停
+        # if patience_counter >= patience:
+        #     print(f"早停触发，最佳验证准确率: {best_val_acc:.2f}%")
+        #     break
     
     # 加载最佳模型
     if best_model_state:
